@@ -13,6 +13,7 @@ class Fabrication::Schematic::Definition
     self.name = name
     self.options = options
     self.block = block
+    @mutex = Mutex.new
   end
 
   def process_block(&block)
@@ -127,14 +128,16 @@ class Fabrication::Schematic::Definition
   def loaded?; !!@loaded end
   def load_body
     return if loaded?
-    @loaded = true
+    @mutex.synchronize do
+      @loaded = true
 
-    if parent
-      merge_result = parent.merge(&block)
-      @attributes = merge_result.attributes
-      @callbacks = merge_result.callbacks
-    else
-      process_block(&block)
+      if parent
+        merge_result = parent.merge(&block)
+        @attributes = merge_result.attributes
+        @callbacks = merge_result.callbacks
+      else
+        process_block(&block)
+      end
     end
   end
 
